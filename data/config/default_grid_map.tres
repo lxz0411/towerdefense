@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/grid/grid_map_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+cells_x = 12
+cells_z = 8
+auto_cell_size_from_mesh = true
+cell_size = 1.0
+grid_corner_offset = Vector3(-6, 0.11, -4)
+tile_scene_path = "res://Assets/SceneModels/Map/tile.glb"
+tile_vertical_offset = 0.0
+picking_plane_y_offset = 0.05
+highlight_y_lift = 0.06

@@ -1,0 +1,106 @@
+[gd_scene load_steps=12 format=3 uid="uid://main3dproto"]
+
+[ext_resource type="Script" path="res://scripts/core/scene_bootstrap.gd" id="1_bootstrap"]
+[ext_resource type="Script" path="res://scripts/systems/grid_system.gd" id="2_grid"]
+[ext_resource type="Script" path="res://scripts/systems/pathfinding_system.gd" id="3_path"]
+[ext_resource type="Script" path="res://scripts/systems/enemy_system.gd" id="4_enemy"]
+[ext_resource type="Script" path="res://scripts/systems/tower_system.gd" id="5_tower"]
+[ext_resource type="Script" path="res://scripts/systems/wave_system.gd" id="6_wave"]
+[ext_resource type="Script" path="res://scripts/systems/ui_system.gd" id="7_ui"]
+[ext_resource type="Script" path="res://scripts/battlefield/camera_rig.gd" id="8_cam"]
+[ext_resource type="PackedScene" path="res://scenes/battlefield/battlefield.tscn" id="9_battle"]
+
+[sub_resource type="Environment" id="Environment_facility"]
+background_mode = 1
+background_color = Color(0.02, 0.03, 0.07, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.14, 0.16, 0.22, 1)
+tonemap_mode = 2
+fog_enabled = true
+fog_light_color = Color(0.04, 0.06, 0.12, 1)
+fog_density = 0.02
+
+[sub_resource type="BoxMesh" id="BoxMesh_unit"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Mat_silhouette"]
+albedo_color = Color(0.04, 0.05, 0.08, 1)
+roughness = 0.92
+metallic = 0.12
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_bootstrap")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_facility")
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="GridSystem" type="Node" parent="Systems"]
+script = ExtResource("2_grid")
+
+[node name="PathfindingSystem" type="Node" parent="Systems"]
+script = ExtResource("3_path")
+
+[node name="EnemySystem" type="Node" parent="Systems"]
+script = ExtResource("4_enemy")
+
+[node name="TowerSystem" type="Node" parent="Systems"]
+script = ExtResource("5_tower")
+
+[node name="WaveSystem" type="Node" parent="Systems"]
+script = ExtResource("6_wave")
+
+[node name="UISystem" type="Node" parent="Systems"]
+script = ExtResource("7_ui")
+
+[node name="World" type="Node3D" parent="."]
+
+[node name="Battlefield" parent="World" instance=ExtResource("9_battle")]
+
+[node name="CameraRig" type="Node3D" parent="World"]
+script = ExtResource("8_cam")
+
+[node name="Camera3D" type="Camera3D" parent="World/CameraRig"]
+current = true
+
+[node name="Lighting" type="Node3D" parent="World"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="World/Lighting"]
+transform = Transform3D(0.819152, -0.40558, 0.40558, 0, 0.707107, 0.707107, -0.573576, -0.579228, 0.579228, 0, 12, 10)
+light_energy = 1.35
+shadow_enabled = true
+
+[node name="FillOmni" type="OmniLight3D" parent="World/Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 8, 6)
+light_color = Color(0.35, 0.55, 0.85, 1)
+light_energy = 0.35
+omni_range = 28.0
+
+[node name="Background" type="Node3D" parent="World"]
+
+[node name="BackWall" type="MeshInstance3D" parent="World/Background"]
+transform = Transform3D(36, 0, 0, 0, 12, 0, 0, 0, 0.5, 0, 5.5, -16)
+mesh = SubResource("BoxMesh_unit")
+surface_material_override/0 = SubResource("Mat_silhouette")
+
+[node name="SilPillarL" type="MeshInstance3D" parent="World/Background"]
+transform = Transform3D(2.2, 0, 0, 0, 9, 0, 0, 0, 2.2, -11, 4.5, -9)
+mesh = SubResource("BoxMesh_unit")
+surface_material_override/0 = SubResource("Mat_silhouette")
+
+[node name="SilPillarR" type="MeshInstance3D" parent="World/Background"]
+transform = Transform3D(2.8, 0, 0, 0, 6, 0, 0, 0, 1.8, 12, 3, -11)
+mesh = SubResource("BoxMesh_unit")
+surface_material_override/0 = SubResource("Mat_silhouette")
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="UIRoot" type="Control" parent="UILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
