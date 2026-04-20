@@ -17,4 +17,4 @@ class_name GridMapConfig
 ## 鼠标拾取用的水平面高度（相对 Battlefield）：corner.y + 该值。
 @export var picking_plane_y_offset: float = 0.05
 ## 高亮块相对格心的额外抬高（沿局部 Y）。
-@export var highlight_y_lift: float = 0.06
+@export var highlight_y_lift: float = 0.22

@@ -1,0 +1,18 @@
+[gd_scene load_steps=3 format=3]
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(0.74, 0.5, 0.74)
+
+[sub_resource type="StandardMaterial3D" id="Mat_wall"]
+albedo_color = Color(0.35, 0.42, 0.52, 1)
+metallic = 0.2
+roughness = 0.55
+emission_enabled = true
+emission = Color(0.16, 0.2, 0.28, 1)
+emission_energy_multiplier = 0.6
+
+[node name="FreeWall" type="Node3D"]
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Mat_wall")

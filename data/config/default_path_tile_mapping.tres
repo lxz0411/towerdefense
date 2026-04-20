@@ -1,0 +1,22 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/pathfinding/path_tile_mapping_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+scene_path_by_key = {
+"corner_dr": "res://Assets/SceneModels/Map/variants/tile-corner-square-DR.tscn",
+"corner_ld": "res://Assets/SceneModels/Map/variants/tile-corner-square-LD.tscn",
+"corner_ru": "res://Assets/SceneModels/Map/variants/tile-corner-square-RU.tscn",
+"corner_ul": "res://Assets/SceneModels/Map/variants/tile-corner-square-UL.tscn",
+"goal_d": "res://Assets/SceneModels/Map/variants/tile-end-D.tscn",
+"goal_l": "res://Assets/SceneModels/Map/variants/tile-end-L.tscn",
+"goal_r": "res://Assets/SceneModels/Map/variants/tile-end-R.tscn",
+"goal_u": "res://Assets/SceneModels/Map/variants/tile-end-U.tscn",
+"spawn_d": "res://Assets/SceneModels/Map/variants/tile-spawn-end-D.tscn",
+"spawn_l": "res://Assets/SceneModels/Map/variants/tile-spawn-end-L.tscn",
+"spawn_r": "res://Assets/SceneModels/Map/variants/tile-spawn-end-R.tscn",
+"spawn_u": "res://Assets/SceneModels/Map/variants/tile-spawn-end-U.tscn",
+"straight_lr": "res://Assets/SceneModels/Map/variants/tile-straight-LR.tscn",
+"straight_ud": "res://Assets/SceneModels/Map/variants/tile-straight-UD.tscn"
+}

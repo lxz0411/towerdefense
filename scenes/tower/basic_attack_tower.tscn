@@ -1,0 +1,34 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/tower/basic_attack_tower.gd" id="1_tower_script"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+top_radius = 0.26
+bottom_radius = 0.3
+height = 0.26
+
+[sub_resource type="BoxMesh" id="BoxMesh_head"]
+size = Vector3(0.22, 0.18, 0.34)
+
+[sub_resource type="StandardMaterial3D" id="Mat_tower"]
+albedo_color = Color(0.28, 0.66, 0.88, 1)
+metallic = 0.3
+roughness = 0.45
+emission_enabled = true
+emission = Color(0.1, 0.45, 0.7, 1)
+emission_energy_multiplier = 0.55
+
+[node name="BasicAttackTower" type="Node3D"]
+script = ExtResource("1_tower_script")
+attack_interval = 0.5
+attack_power = 50
+show_range_debug = true
+
+[node name="Base" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_base")
+surface_material_override/0 = SubResource("Mat_tower")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+position = Vector3(0, 0.2, 0)
+mesh = SubResource("BoxMesh_head")
+surface_material_override/0 = SubResource("Mat_tower")

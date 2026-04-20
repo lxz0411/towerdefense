@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/tower/basic_attack_bullet.gd" id="1_bullet_script"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_bullet"]
+radius = 0.06
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="Mat_bullet"]
+albedo_color = Color(1, 0.92, 0.2, 1)
+emission_enabled = true
+emission = Color(1, 0.78, 0.08, 1)
+emission_energy_multiplier = 1.35
+metallic = 0.1
+roughness = 0.25
+
+[node name="BasicAttackBullet" type="Node3D"]
+script = ExtResource("1_bullet_script")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_bullet")
+surface_material_override/0 = SubResource("Mat_bullet")
