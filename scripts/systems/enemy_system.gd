@@ -17,6 +17,7 @@ const ENEMY_Y_OFFSET := 0.22
 
 var _grid_system: GridSystem
 var _path_system: PathfindingSystem
+var _wave_system: WaveSystem
 var _enemy_scene: PackedScene
 var _spawn_root: Node3D
 var _spawn_timer: Timer
@@ -29,6 +30,7 @@ var _is_spawning: bool = false
 func initialize(config: GameConfig) -> void:
 	_grid_system = GameManager.grid_system as GridSystem
 	_path_system = GameManager.pathfinding_system as PathfindingSystem
+	_wave_system = GameManager.wave_system as WaveSystem
 	if _grid_system == null or _path_system == null:
 		push_error("EnemySystem: 缺少 GridSystem 或 PathfindingSystem")
 		return
@@ -51,6 +53,8 @@ func initialize(config: GameConfig) -> void:
 	_spawn_timer.timeout.connect(_on_spawn_timer_timeout)
 	add_child(_spawn_timer)
 	_path_system.path_updated.connect(_on_path_updated)
+	if _wave_system != null:
+		_wave_system.wave_cleared.connect(_on_wave_cleared)
 	if auto_start_spawning:
 		start_spawning()
 
@@ -135,7 +139,6 @@ func _on_spawn_timer_timeout() -> void:
 func _on_enemy_reached_goal(enemy: Enemy) -> void:
 	var id := enemy.get_instance_id()
 	_alive_enemies.erase(id)
-	_path_system.clear_temp_enemy_path(id)
 	enemy_removed.emit(enemy)
 	alive_count_changed.emit(_alive_enemies.size())
 	_base_hp_placeholder -= 1
@@ -149,7 +152,6 @@ func _on_enemy_reached_goal(enemy: Enemy) -> void:
 func _on_enemy_died(enemy: Enemy) -> void:
 	var id := enemy.get_instance_id()
 	_alive_enemies.erase(id)
-	_path_system.clear_temp_enemy_path(id)
 	enemy_removed.emit(enemy)
 	alive_count_changed.emit(_alive_enemies.size())
 	_on_enemy_drop_placeholder(enemy.global_position)
@@ -177,6 +179,8 @@ func get_alive_count() -> int:
 
 
 func _on_path_updated(_path_cells: Array[Vector2i]) -> void:
+	# 规则：出现过的支路在本轮路径版本内保持不变；当路径再次变化时整体重建。
+	_path_system.clear_all_temp_enemy_paths()
 	_retarget_alive_enemies_to_latest_path()
 
 
@@ -189,7 +193,6 @@ func _retarget_alive_enemies_to_latest_path() -> void:
 
 	var alive := get_alive_enemies()
 	if alive.is_empty():
-		_path_system.clear_all_temp_enemy_paths()
 		return
 
 	for enemy in alive:
@@ -204,6 +207,11 @@ func _retarget_alive_enemies_to_latest_path() -> void:
 			_path_system.set_temp_enemy_path(enemy_id, temp_cells)
 	if debug_enemy_movement:
 		print("EnemySystem: 路径更新，已重定向敌人数量=%d" % alive.size())
+
+
+func _on_wave_cleared(_wave_index: int) -> void:
+	# 规则：支路可视化只保留到本波结束
+	_path_system.clear_all_temp_enemy_paths()
 
 
 func _build_enemy_remaining_points(enemy: Enemy, tile_grid: TileGrid, out_temp_cells: Array[Vector2i]) -> Array[Vector3]:
@@ -238,7 +246,8 @@ func _build_enemy_remaining_points(enemy: Enemy, tile_grid: TileGrid, out_temp_c
 
 	if not full_main_path.is_empty():
 		var goal_outer: Vector2i = full_main_path.back()
-		if path_cells.back() != goal_outer:
+		var last_path_cell: Vector2i = path_cells[path_cells.size() - 1]
+		if last_path_cell != goal_outer:
 			path_cells.append(goal_outer)
 
 	var current := world_pos

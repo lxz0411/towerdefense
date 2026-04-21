@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://Assets/SceneModels/Map/tile-split.glb" id="1_src"]
+
+[node name="TileVariant" type="Node3D"]
+
+[node name="Model" parent="." instance=ExtResource("1_src")]
+rotation_degrees = Vector3(0, 90, 0)

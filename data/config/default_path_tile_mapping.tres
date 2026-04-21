@@ -9,6 +9,7 @@ scene_path_by_key = {
 "corner_ld": "res://Assets/SceneModels/Map/variants/tile-corner-square-LD.tscn",
 "corner_ru": "res://Assets/SceneModels/Map/variants/tile-corner-square-RU.tscn",
 "corner_ul": "res://Assets/SceneModels/Map/variants/tile-corner-square-UL.tscn",
+"cross": "res://Assets/SceneModels/Map/variants/tile-crossing-UDLR.tscn",
 "goal_d": "res://Assets/SceneModels/Map/variants/tile-end-D.tscn",
 "goal_l": "res://Assets/SceneModels/Map/variants/tile-end-L.tscn",
 "goal_r": "res://Assets/SceneModels/Map/variants/tile-end-R.tscn",
@@ -18,5 +19,9 @@ scene_path_by_key = {
 "spawn_r": "res://Assets/SceneModels/Map/variants/tile-spawn-end-R.tscn",
 "spawn_u": "res://Assets/SceneModels/Map/variants/tile-spawn-end-U.tscn",
 "straight_lr": "res://Assets/SceneModels/Map/variants/tile-straight-LR.tscn",
-"straight_ud": "res://Assets/SceneModels/Map/variants/tile-straight-UD.tscn"
+"straight_ud": "res://Assets/SceneModels/Map/variants/tile-straight-UD.tscn",
+"tee_lrd": "res://Assets/SceneModels/Map/variants/tile-split-LRD.tscn",
+"tee_lru": "res://Assets/SceneModels/Map/variants/tile-split-LRU.tscn",
+"tee_lud": "res://Assets/SceneModels/Map/variants/tile-split-LUD.tscn",
+"tee_rud": "res://Assets/SceneModels/Map/variants/tile-split-RUD.tscn"
 }
