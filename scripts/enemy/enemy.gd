@@ -36,6 +36,53 @@ func setup_path(points: Array[Vector3], speed: float, debug_enabled: bool) -> vo
 	_path_index = 1
 
 
+func retarget_path(points: Array[Vector3]) -> void:
+	if _dead or _arrived:
+		return
+	if points.is_empty():
+		return
+
+	_path_points = points.duplicate()
+	_fixed_y = global_position.y
+
+	var pos := global_position
+	pos.y = _fixed_y
+	var best_i := 0
+	var best_d2 := INF
+	for i in range(_path_points.size()):
+		var p := _path_points[i]
+		p.y = _fixed_y
+		var d2 := Vector2(pos.x - p.x, pos.z - p.z).length_squared()
+		if d2 < best_d2:
+			best_d2 = d2
+			best_i = i
+
+	_path_index = best_i
+	if _path_index < _path_points.size() - 1:
+		var near := _path_points[_path_index]
+		near.y = _fixed_y
+		if Vector2(pos.x - near.x, pos.z - near.z).length() <= waypoint_reach_distance:
+			_path_index += 1
+
+	set_process(true)
+	if debug_log:
+		print("EnemyRetarget: nearest_wp=", best_i, " next_wp=", _path_index)
+
+
+func get_remaining_path_points() -> Array[Vector3]:
+	var out: Array[Vector3] = []
+	if _dead or _arrived:
+		return out
+	var now := global_position
+	now.y = _fixed_y
+	out.append(now)
+	for i in range(_path_index, _path_points.size()):
+		var p := _path_points[i]
+		p.y = _fixed_y
+		out.append(p)
+	return out
+
+
 func _process(delta: float) -> void:
 	if _arrived or _dead or _path_points.is_empty():
 		return

@@ -1,0 +1,70 @@
+[gd_resource type="Resource" load_steps=15 format=3]
+
+[ext_resource type="Script" path="res://scripts/wave/wave_config.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/wave/wave_data.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/wave/wave_spawn_entry.gd" id="3"]
+
+[sub_resource type="Resource" id="Wave1Entry1"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 4
+spawn_interval_sec = 0.8
+
+[sub_resource type="Resource" id="Wave1Entry2"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 2
+spawn_interval_sec = 0.5
+
+[sub_resource type="Resource" id="Wave2Entry1"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 3
+spawn_interval_sec = 0.7
+
+[sub_resource type="Resource" id="Wave2Entry2"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 3
+spawn_interval_sec = 0.55
+
+[sub_resource type="Resource" id="Wave2Entry3"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 2
+spawn_interval_sec = 0.45
+
+[sub_resource type="Resource" id="Wave3Entry1"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 4
+spawn_interval_sec = 0.55
+
+[sub_resource type="Resource" id="Wave3Entry2"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 3
+spawn_interval_sec = 0.45
+
+[sub_resource type="Resource" id="Wave3Entry3"]
+script = ExtResource("3")
+enemy_type = "basic_enemy"
+enemy_count = 3
+spawn_interval_sec = 0.35
+
+[sub_resource type="Resource" id="WaveData_1"]
+script = ExtResource("2")
+spawn_entries = Array[ExtResource("3")]([SubResource("Wave1Entry1"), SubResource("Wave1Entry2")])
+
+[sub_resource type="Resource" id="WaveData_2"]
+script = ExtResource("2")
+spawn_entries = Array[ExtResource("3")]([SubResource("Wave2Entry1"), SubResource("Wave2Entry2"), SubResource("Wave2Entry3")])
+
+[sub_resource type="Resource" id="WaveData_3"]
+script = ExtResource("2")
+spawn_entries = Array[ExtResource("3")]([SubResource("Wave3Entry1"), SubResource("Wave3Entry2"), SubResource("Wave3Entry3")])
+
+[resource]
+script = ExtResource("1")
+intermission_sec = 5.0
+waves = Array[ExtResource("2")]([SubResource("WaveData_1"), SubResource("WaveData_2"), SubResource("WaveData_3")])

@@ -1,6 +1,8 @@
 extends GameSystem
 class_name PathfindingSystem
 
+signal path_updated(path_cells: Array[Vector2i])
+
 const KEY_STRAIGHT_LR := "straight_lr"
 const KEY_STRAIGHT_UD := "straight_ud"
 const KEY_CORNER_RU := "corner_ru"
@@ -34,6 +36,10 @@ var _goal_outer_cell: Vector2i = Vector2i.ZERO
 var _path_result := GridPathResult.new()
 ## 当前由路径系统替换过的路径格（不含入口与终点）
 var _painted_path_cells: Dictionary = {}
+## enemy_id(int) -> Array[Vector2i]，仅用于“个体临时路径”可视化
+var _temp_enemy_paths: Dictionary = {}
+## Vector2i -> 引用计数（多少条临时路径经过该格）
+var _temp_painted_ref_count: Dictionary = {}
 
 
 func initialize(config: GameConfig) -> void:
@@ -104,6 +110,7 @@ func set_entry_and_goal(entry_cell: Vector2i, goal_cell: Vector2i) -> bool:
 	_update_spawn_goal_markers()
 	_recalculate_path()
 	_apply_path_tiles()
+	_emit_path_updated()
 	return _path_result.found
 
 
@@ -120,6 +127,7 @@ func set_cell_blocked(coord: Vector2i, blocked: bool) -> bool:
 	_pathfinder.set_blocked(coord, blocked)
 	_recalculate_path()
 	_apply_path_tiles()
+	_emit_path_updated()
 	return _path_result.found
 
 
@@ -140,7 +148,24 @@ func can_block_cell(coord: Vector2i) -> bool:
 func force_recalculate_path() -> GridPathResult:
 	_recalculate_path()
 	_apply_path_tiles()
+	_emit_path_updated()
 	return _path_result
+
+
+func find_path_cells(start_cell: Vector2i, goal_cell: Vector2i) -> GridPathResult:
+	return _pathfinder.find_path(start_cell, goal_cell)
+
+
+func find_path_cells_allow_start_blocked(start_cell: Vector2i, goal_cell: Vector2i) -> GridPathResult:
+	return _pathfinder.find_path_allow_start_blocked(start_cell, goal_cell)
+
+
+func find_path_from_cell_to_goal(start_cell: Vector2i) -> GridPathResult:
+	return _pathfinder.find_path(start_cell, _goal_cell)
+
+
+func find_path_from_cell_to_goal_allow_start_blocked(start_cell: Vector2i) -> GridPathResult:
+	return _pathfinder.find_path_allow_start_blocked(start_cell, _goal_cell)
 
 
 func _recalculate_path() -> void:
@@ -168,8 +193,10 @@ func _update_spawn_goal_markers() -> void:
 func _apply_path_tiles() -> void:
 	_restore_painted_path_tiles()
 	if not _path_result.found:
+		_rebuild_temp_path_tiles()
 		return
 	if _path_result.cells.is_empty():
+		_rebuild_temp_path_tiles()
 		return
 
 	var path_cells := _path_result.cells
@@ -194,6 +221,7 @@ func _apply_path_tiles() -> void:
 		var ok := _grid_system.replace_tile_scene_at_cell(cur, scene_path, 0.0)
 		if ok:
 			_painted_path_cells[cur] = true
+	_rebuild_temp_path_tiles()
 
 
 func _restore_painted_path_tiles() -> void:
@@ -258,3 +286,102 @@ func _scene_path_for_key(key: String) -> String:
 	if _tile_map_cfg == null:
 		return ""
 	return _tile_map_cfg.get_scene_path(key)
+
+
+func _emit_path_updated() -> void:
+	path_updated.emit(_path_result.cells.duplicate())
+
+
+func set_temp_enemy_path(enemy_id: int, raw_cells: Array[Vector2i]) -> void:
+	var cells := _sanitize_grid_cells(raw_cells)
+	if cells.size() < 2:
+		clear_temp_enemy_path(enemy_id)
+		return
+	_temp_enemy_paths[enemy_id] = cells
+	_rebuild_temp_path_tiles()
+
+
+func clear_temp_enemy_path(enemy_id: int) -> void:
+	if not _temp_enemy_paths.has(enemy_id):
+		return
+	_temp_enemy_paths.erase(enemy_id)
+	_rebuild_temp_path_tiles()
+
+
+func clear_all_temp_enemy_paths() -> void:
+	if _temp_enemy_paths.is_empty() and _temp_painted_ref_count.is_empty():
+		return
+	_temp_enemy_paths.clear()
+	_rebuild_temp_path_tiles()
+
+
+func _sanitize_grid_cells(raw_cells: Array[Vector2i]) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for c in raw_cells:
+		if _pathfinder.is_valid_coord(c):
+			if out.is_empty() or out.back() != c:
+				out.append(c)
+	return out
+
+
+func _rebuild_temp_path_tiles() -> void:
+	for key in _temp_painted_ref_count.keys():
+		var coord: Vector2i = key
+		if not _painted_path_cells.has(coord):
+			_grid_system.restore_default_tile_at_cell(coord)
+	_temp_painted_ref_count.clear()
+
+	for v in _temp_enemy_paths.values():
+		if not (v is Array):
+			continue
+		var cells: Array[Vector2i] = []
+		for item in v:
+			if item is Vector2i:
+				cells.append(item)
+		_paint_one_temp_path(cells)
+
+
+func _paint_one_temp_path(cells: Array[Vector2i]) -> void:
+	if cells.size() < 2:
+		return
+	var last_i := cells.size() - 1
+	for i in range(cells.size()):
+		var cur := cells[i]
+		var prev_cell := _virtual_prev_cell(cells, i)
+		var next_cell := _virtual_next_cell(cells, i)
+		var prev_dir := prev_cell - cur
+		var next_dir := next_cell - cur
+
+		var scene_key := KEY_STRAIGHT_LR
+		if _is_turn(prev_dir, next_dir):
+			scene_key = _corner_scene_for_dirs(prev_dir, next_dir)
+		else:
+			scene_key = _straight_scene_for_dir(prev_dir)
+
+		var scene_path := _scene_path_for_key(scene_key)
+		if scene_path.is_empty():
+			continue
+		var ok := _grid_system.replace_tile_scene_at_cell(cur, scene_path, 0.0)
+		if ok:
+			var old_count: int = int(_temp_painted_ref_count.get(cur, 0))
+			_temp_painted_ref_count[cur] = old_count + 1
+		if i == last_i:
+			break
+
+
+static func _virtual_prev_cell(cells: Array[Vector2i], i: int) -> Vector2i:
+	if i > 0:
+		return cells[i - 1]
+	var cur := cells[i]
+	var next := cells[i + 1]
+	var dir := next - cur
+	return cur - dir
+
+
+static func _virtual_next_cell(cells: Array[Vector2i], i: int) -> Vector2i:
+	if i < cells.size() - 1:
+		return cells[i + 1]
+	var cur := cells[i]
+	var prev := cells[i - 1]
+	var dir := cur - prev
+	return cur + dir

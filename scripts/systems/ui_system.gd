@@ -3,6 +3,7 @@ class_name UISystem
 
 var _enemy_system: EnemySystem
 var _tower_system: TowerSystem
+var _wave_system: WaveSystem
 var _start_enemy_btn: Button
 var _card_bar: HBoxContainer
 
@@ -10,8 +11,10 @@ var _card_bar: HBoxContainer
 func initialize(config: GameConfig) -> void:
 	_enemy_system = GameManager.enemy_system as EnemySystem
 	_tower_system = GameManager.tower_system as TowerSystem
+	_wave_system = GameManager.wave_system as WaveSystem
 	_create_start_enemy_button()
 	_create_bottom_cards()
+	_bind_wave_events()
 
 	if config.print_system_init:
 		print("UISystem: 就绪（开始刷怪按钮）")
@@ -36,11 +39,15 @@ func _create_start_enemy_button() -> void:
 
 
 func _on_start_enemy_button_pressed() -> void:
-	if _enemy_system == null:
+	if _wave_system == null:
 		return
-	_enemy_system.start_spawning()
-	_start_enemy_btn.disabled = true
-	_start_enemy_btn.text = "刷怪中..."
+	var started := _wave_system.start_battle()
+	if started:
+		_start_enemy_btn.disabled = true
+		_start_enemy_btn.text = "战斗中..."
+	else:
+		_start_enemy_btn.disabled = false
+		_start_enemy_btn.text = "无法开始(看控制台)"
 
 
 func _create_bottom_cards() -> void:
@@ -86,3 +93,32 @@ func _on_card_gui_input(event: InputEvent, placement_type: String) -> void:
 	var mb := event as InputEventMouseButton
 	if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 		_tower_system.begin_drag(placement_type)
+
+
+func _bind_wave_events() -> void:
+	if _wave_system == null:
+		return
+	_wave_system.wave_started.connect(_on_wave_started)
+	_wave_system.intermission_started.connect(_on_wave_intermission_started)
+	_wave_system.all_waves_completed.connect(_on_all_waves_completed)
+
+
+func _on_wave_started(wave_index: int, _wave: WaveData) -> void:
+	if _start_enemy_btn == null:
+		return
+	_start_enemy_btn.disabled = true
+	_start_enemy_btn.text = "战斗中: W%d" % [wave_index + 1]
+
+
+func _on_wave_intermission_started(next_wave_index: int, duration_sec: float) -> void:
+	if _start_enemy_btn == null:
+		return
+	_start_enemy_btn.disabled = false
+	_start_enemy_btn.text = "开始下一波(W%d) 间隙%.1fs" % [next_wave_index + 1, duration_sec]
+
+
+func _on_all_waves_completed() -> void:
+	if _start_enemy_btn == null:
+		return
+	_start_enemy_btn.disabled = true
+	_start_enemy_btn.text = "全部波次完成"

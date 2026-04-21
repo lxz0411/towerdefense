@@ -42,6 +42,16 @@ func is_walkable(coord: Vector2i) -> bool:
 	return is_valid_coord(coord) and not is_blocked(coord)
 
 
+func find_path_allow_start_blocked(start: Vector2i, goal: Vector2i) -> GridPathResult:
+	var was_blocked := is_blocked(start)
+	if was_blocked:
+		set_blocked(start, false)
+	var result := find_path(start, goal)
+	if was_blocked:
+		set_blocked(start, true)
+	return result
+
+
 func is_valid_coord(coord: Vector2i) -> bool:
 	return (
 		coord.x >= 0

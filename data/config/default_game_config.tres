@@ -7,3 +7,4 @@ script = ExtResource("1")
 print_system_init = true
 grid_map_config_path = "res://data/config/default_grid_map.tres"
 path_tile_mapping_config_path = "res://data/config/default_path_tile_mapping.tres"
+wave_config_path = "res://data/config/default_wave_config.tres"

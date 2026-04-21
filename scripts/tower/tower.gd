@@ -3,6 +3,7 @@ class_name Tower
 
 @export var attack_interval: float = 0.8
 @export var attack_power: int = 1
+@export var deploy_time_sec: float = 1.0
 @export var debug_attack_log: bool = false
 @export var show_range_debug: bool = false
 

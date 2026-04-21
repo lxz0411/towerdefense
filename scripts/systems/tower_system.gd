@@ -5,16 +5,18 @@ const FREE_WALL_SCENE_PATH := "res://scenes/placement/free_wall.tscn"
 const BASIC_ATTACK_TOWER_SCENE_PATH := "res://scenes/tower/basic_attack_tower.tscn"
 const TYPE_WALL := "free_wall"
 const TYPE_BASIC_ATTACK_TOWER := "basic_attack_tower"
+const WALL_DEPLOY_TIME_SEC := 1.0
 
 var _grid_system: GridSystem
 var _path_system: PathfindingSystem
 var _enemy_system: EnemySystem
+var _wave_system: WaveSystem
 var _grid: TileGrid
 var _battle_camera: Camera3D
 var _place_root: Node3D
 var _free_wall_scene: PackedScene
 var _basic_attack_tower_scene: PackedScene
-## Vector2i -> { "type": String, "node": Node3D }
+## Vector2i -> { "type": String, "node": Node3D, "committed": bool, "deploying": bool, "timer": Timer }
 var _placed_cells: Dictionary = {}
 var _dragging_type: String = ""
 var _ghost_node: Node3D
@@ -26,6 +28,7 @@ func initialize(config: GameConfig) -> void:
 	_grid_system = GameManager.grid_system as GridSystem
 	_path_system = GameManager.pathfinding_system as PathfindingSystem
 	_enemy_system = GameManager.enemy_system as EnemySystem
+	_wave_system = GameManager.wave_system as WaveSystem
 	if _grid_system == null or _path_system == null or _enemy_system == null:
 		push_error("TowerSystem: 缺少 GridSystem / PathfindingSystem / EnemySystem")
 		return
@@ -117,18 +120,29 @@ func place_blocker(coord: Vector2i, blocker_type: String, scene: PackedScene) ->
 	pos.y += 0.18
 	node.position = pos
 
-	# 提交：再次验证；若失败则回滚
-	var committed := _path_system.set_cell_blocked(coord, true)
+	var deploy_time := _resolve_deploy_time_sec(blocker_type, node)
+	if _should_use_deploy_time() and deploy_time > 0.0:
+		var timer := Timer.new()
+		timer.one_shot = true
+		timer.wait_time = deploy_time
+		timer.timeout.connect(_on_deploy_timer_timeout.bind(coord))
+		add_child(timer)
+		timer.start()
+		_placed_cells[coord] = {
+			"type": blocker_type,
+			"node": node,
+			"committed": false,
+			"deploying": true,
+			"timer": timer
+		}
+		print("PlaceDeployStart: coord=%s type=%s deploy=%.2fs" % [coord, blocker_type, deploy_time])
+		return true
+
+	var committed := _commit_placement(coord, blocker_type, node)
 	if not committed:
 		node.queue_free()
-		_path_system.set_cell_blocked(coord, false)
 		print("PlaceRollback: coord=%s reason=path_invalid_after_commit" % coord)
 		return false
-
-	_placed_cells[coord] = {"type": blocker_type, "node": node}
-	if node.has_method("setup"):
-		node.call("setup", coord, _grid, _enemy_system)
-	print("PlaceOk: coord=%s type=%s" % [coord, blocker_type])
 	return true
 
 
@@ -138,10 +152,16 @@ func remove_placement(coord: Vector2i) -> bool:
 
 	var info: Dictionary = _placed_cells[coord] as Dictionary
 	var node: Node3D = info.get("node", null) as Node3D
+	var timer: Timer = info.get("timer", null) as Timer
+	var committed := bool(info.get("committed", false))
+	if timer and is_instance_valid(timer):
+		timer.stop()
+		timer.queue_free()
 	if node and is_instance_valid(node):
 		node.queue_free()
 	_placed_cells.erase(coord)
-	_path_system.set_cell_blocked(coord, false)
+	if committed:
+		_path_system.set_cell_blocked(coord, false)
 	print("RemoveOk: coord=%s" % coord)
 	return true
 
@@ -229,3 +249,57 @@ func _try_place_dragged() -> void:
 		place_free_wall(_hover_cell)
 	elif _dragging_type == TYPE_BASIC_ATTACK_TOWER:
 		place_basic_attack_tower(_hover_cell)
+
+
+func _on_deploy_timer_timeout(coord: Vector2i) -> void:
+	if not _placed_cells.has(coord):
+		return
+	var info: Dictionary = _placed_cells[coord] as Dictionary
+	var node: Node3D = info.get("node", null) as Node3D
+	var blocker_type := String(info.get("type", ""))
+	if node == null or not is_instance_valid(node):
+		_placed_cells.erase(coord)
+		return
+
+	var committed := _commit_placement(coord, blocker_type, node)
+	if not committed:
+		node.queue_free()
+		_placed_cells.erase(coord)
+		print("PlaceRollback: coord=%s reason=path_invalid_after_deploy" % coord)
+		return
+
+	var timer: Timer = info.get("timer", null) as Timer
+	if timer and is_instance_valid(timer):
+		timer.queue_free()
+
+
+func _commit_placement(coord: Vector2i, blocker_type: String, node: Node3D) -> bool:
+	var committed := _path_system.set_cell_blocked(coord, true)
+	if not committed:
+		return false
+
+	_placed_cells[coord] = {
+		"type": blocker_type,
+		"node": node,
+		"committed": true,
+		"deploying": false,
+		"timer": null
+	}
+	if node.has_method("setup"):
+		node.call("setup", coord, _grid, _enemy_system)
+	print("PlaceOk: coord=%s type=%s" % [coord, blocker_type])
+	return true
+
+
+func _should_use_deploy_time() -> bool:
+	if _wave_system == null:
+		return false
+	return _wave_system.is_battle_phase_active()
+
+
+func _resolve_deploy_time_sec(blocker_type: String, node: Node3D) -> float:
+	if blocker_type == TYPE_WALL:
+		return WALL_DEPLOY_TIME_SEC
+	if node is Tower:
+		return maxf(0.0, (node as Tower).deploy_time_sec)
+	return 0.0
